@@ -14,35 +14,57 @@ ENT.AdminOnly = false
 ENT.RenderGroup = RENDERGROUP_TRANSLUCENT
 
 function ENT:SpawnFunction( ply, tr, ClassName )
-
 	if ( !tr.Hit ) then return end
 
 	local size = math.random( 16, 48 )
 
 	local ent = ents.Create( ClassName )
-	ent:SetPos( tr.HitPos + tr.HitNormal * size )
-	ent:SetBallSize( size )
 	ent:Spawn()
 	ent:Activate()
 
-	return ent
 
+	local nAngle = (tr.HitNormal * -1):Angle()
+
+	nAngle:RotateAroundAxis(nAngle:Right(), 90)
+
+	ent:SetPos(tr.HitPos + tr.HitNormal * 5)
+	ent:SetAngles(nAngle)
+	ent:SetMoveType(MOVETYPE_NONE)
+	ent.activated = true
+
+	ent:EmitSound("weapons/slam/mine_mode.wav")
+
+	if (tr.HitEntity and tr.HitEntity:GetClass() != "worldspawn") then
+		ent:SetParent(tr.HitEntity)
+	end
+
+	timer.Simple(0.5, function()
+		if (ent and ent:IsValid()) then
+			ent:EmitSound("HL1/fvox/beep.wav", 100, 200)
+
+			ent:SetDTBool(0, true)
+		end
+	end)
+
+	local physObj = ent:GetPhysicsObject()
+	if (IsValid(physObj)) then
+		physObj:Sleep()
+		physObj:EnableMotion(false)
+	end
+
+	return ent
 end
 
---[[---------------------------------------------------------
-	Name: Initialize
------------------------------------------------------------]]
 function ENT:Initialize()
-	-- We do NOT want to execute anything below in this FUNCTION on CLIENT
 	if ( CLIENT ) then return end
 
-	-- Use the helibomb model just for the shadow (because it's about the same size)
 	self:SetModel( "models/weapons/w_slam.mdl" )
 	self:PhysicsInit(SOLID_VPHYSICS)
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetUseType(SIMPLE_USE)
 	self:SetCollisionGroup(COLLISION_GROUP_WEAPON)
 	self:SetBodygroup(0, 1)
+	self.health = 15
 
 	local physObj = self:GetPhysicsObject()
 	if (IsValid(physObj)) then
@@ -53,15 +75,19 @@ end
 
 local BounceSound = Sound( "garrysmod/balloon_pop_cute.wav" )
 function ENT:PhysicsCollide( data, physobj )
+	if (self.activated) then return end
+
 	local nAngle = data.HitNormal:Angle()
 
 	nAngle:RotateAroundAxis(nAngle:Right(), 90)
 
 	self:SetPos(data.HitPos - data.HitNormal * 5)
 	self:SetAngles(nAngle)
+	self:SetMoveType(MOVETYPE_NONE)
+	self.activated = true
 
 	self:EmitSound("weapons/slam/mine_mode.wav")
-	PrintTable(data)
+
 	if (data.HitEntity and data.HitEntity:GetClass() != "worldspawn") then
 		self:SetParent(data.HitEntity)
 	end
@@ -69,9 +95,8 @@ function ENT:PhysicsCollide( data, physobj )
 	timer.Simple(0.5, function()
 		if (self and self:IsValid()) then
 			self:EmitSound("HL1/fvox/beep.wav", 100, 200)
+			self:SetDTBool(0, true)
 		end
-
-		self:SetDTBool(0, true)
 	end)
 
 	local physObj = self:GetPhysicsObject()
@@ -88,13 +113,14 @@ function ENT:Explode()
 	util.Effect("Explosion", effectData, true, true)
 	
 	util.BlastDamage(self, self, self:GetPos() + Vector( 0, 0, 1 ), 256, 120 )
+
 	self:Remove()
 end
 
 if (SERVER) then
-	timer.Create("slamTime", .4, 0, function()
+	timer.Create("slamTime", .5, 0, function()
 		for k, v in ipairs(ents.GetAll()) do
-			if (v:IsNPC()) then
+			if (v:IsNPC() or v:IsPlayer()) then
 				for _, slam in ipairs(ents.FindByClass("sent_slam")) do
 					if (slam:GetDTBool(0)) then
 						local dist = v:GetPos():Distance(slam:GetPos())
@@ -113,8 +139,12 @@ end
 	Name: OnTakeDamage
 -----------------------------------------------------------]]
 function ENT:OnTakeDamage( dmginfo )
-	-- React physically when shot/getting blown
-	self:TakePhysicsDamage( dmginfo )
+	if (self.explode == true) then return end
+	self.explode = true
+
+	if (dmginfo:GetInflictor() != self) then
+		self:Explode()
+	end
 end
 
 --[[---------------------------------------------------------

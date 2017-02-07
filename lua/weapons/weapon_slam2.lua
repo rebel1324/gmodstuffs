@@ -1,7 +1,7 @@
 AddCSLuaFile()
 
 if( CLIENT ) then
-	SWEP.PrintName = "Ammo Supply";
+	SWEP.PrintName = "S.L.A.M";
 	SWEP.Slot = 0;
 	SWEP.SlotPos = 0;
 	SWEP.CLMode = 0
