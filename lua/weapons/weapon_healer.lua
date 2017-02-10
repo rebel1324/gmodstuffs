@@ -219,22 +219,24 @@ if (CLIENT) then
 		pos = pos + self.dispPos.y * forward(ang)
 		pos = pos + self.dispPos.z * up(ang)
 
-		cam.Start3D2D(pos, ang, .02)
-			draw.SimpleText("MEDKIT", "MedFont", 0, -16, Color(255, 255, 255, alpha), 3, 4)
-			draw.SimpleText("Target: " .. (self.target and self.target:Name()) or "", "MedSubFont", 2, -1, Color(255, 255, 255, alpha), 3, 4)
+		if (self.target and self.target:IsValid()) then
+			cam.Start3D2D(pos, ang, .02)
+				draw.SimpleText("MEDKIT", "MedFont", 0, -16, Color(255, 255, 255, alpha), 3, 4)
+				draw.SimpleText("Target: " .. (self.target and self.target:Name()) or "", "MedSubFont", 2, -1, Color(255, 255, 255, alpha), 3, 4)
 
-			local bw, bh = 410, 20
-			local bx, by = 0, 0
-			self.percLerp = Lerp(ft*5, self.percLerp, self:GetHeal() / self.maxHeal)
-			local perc = self.percLerp
+				local bw, bh = 410, 20
+				local bx, by = 0, 0
+				self.percLerp = Lerp(ft*5, self.percLerp, self:GetHeal() / self.maxHeal)
+				local perc = self.percLerp
 
-			surface.SetDrawColor(255, 255, 255, 15)
-			surface.DrawRect(bx, by, bw, bh)
-			surface.DrawOutlinedRect(bx, by, bw, bh)
+				surface.SetDrawColor(255, 255, 255, 15)
+				surface.DrawRect(bx, by, bw, bh)
+				surface.DrawOutlinedRect(bx, by, bw, bh)
 
-			surface.SetDrawColor(255, 255, 255, 255)
-			surface.DrawRect(bx + gap, by + gap, (bw - gap*2)*perc, bh - gap*2)
-		cam.End3D2D()
+				surface.SetDrawColor(255, 255, 255, 255)
+				surface.DrawRect(bx + gap, by + gap, (bw - gap*2)*perc, bh - gap*2)
+			cam.End3D2D()
+		end
 	end
 end
 function SWEP:SecondaryAttack()
