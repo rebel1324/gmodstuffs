@@ -140,7 +140,7 @@ function SWEP:Think()
 	local entity = trace.Entity
 	local dist = trace.HitPos:Distance(client:GetPos())
 
-	self.target = (entity:IsValid() and entity:IsPlayer()) and entity or client
+	self.target = (IsValid(entity) and entity:IsPlayer()) and entity or client
 
 	if (client:KeyDown(IN_ATTACK) and self:GetNextPrimaryFire() < CurTime()) then
 		if (!entity:IsValid()) then
